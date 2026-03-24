@@ -1,0 +1,29 @@
+{
+  "skill_name": "dw-layered-design",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "我有一个电商系统，这是主要的几张表 DDL：\n- orders(id, user_id, product_id, amount, status, create_time, update_time)\n- users(id, name, phone, gender, age, level, register_time)\n- products(id, sku_name, category_id, price, brand)\n- order_items(id, order_id, product_id, quantity, unit_price)\n\n我需要看每日 GMV、用户留存、商品热销排行。帮我设计数仓。",
+      "expected_output": "完整5层数仓设计文档，包含ODS(4表)→DIM(用户维度、商品维度等)→DWD(下单事实表、支付事实表等)→DWS(用户交易宽表等)→ADS(GMV报表、留存分析、商品排行)，含DDL和数据流向图",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "我们是一个在线教育平台，主要业务是视频课程。用户可以注册、浏览课程、购买课程、观看视频、完成作业、获得证书。我们想分析课程完课率、用户学习路径、营收数据。帮我做个数仓设计。",
+      "expected_output": "从自然语言描述推导出源表结构，设计5层架构，DIM层包含用户维度、课程维度等，DWD层仅包含事实表（学习行为事实表等），DWS层包含用户学习汇总、课程汇总，ADS层包含完课率报表、学习路径分析、营收报表",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "我已经有了 DWD 层的交易事实表 dwd_trade_order_fact，DIM 层有用户维度表 dim_user_info 和商品维度表 dim_product_sku，帮我设计 DWS 层的用户交易汇总宽表。",
+      "expected_output": "仅输出DWS层设计，包含dws_trade_user_order_1d和dws_trade_user_order_nd的DDL、指标定义、加工SQL，正确引用DIM层维度表，不输出其他层",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "我们是一家汽车主机厂，需要建一个质量预警数仓。主要数据源有：\n- 生产线数据：vehicle_production(vin, model_code, plant_code, line_no, station_code, produce_time, shift, worker_id)\n- 质检数据：quality_inspection(inspection_id, vin, checkpoint, result, defect_code, defect_level, inspector_id, inspect_time)\n- 零部件供应商：part_supplier(part_no, part_name, supplier_code, supplier_name, batch_no, produce_date)\n- 装配记录：assembly_record(vin, station_code, part_no, batch_no, torque_value, torque_standard, assembly_time)\n- 售后索赔：warranty_claim(claim_id, vin, dealer_code, fault_desc, fault_code, part_no, claim_amount, mileage, claim_date, repair_date)\n- 客户投诉：customer_complaint(complaint_id, vin, channel, complaint_type, complaint_desc, complaint_time)\n\n业务需求：1) 整车质量 IPTV（千台车故障数）趋势看板 2) 零部件供应商质量排名 3) 单车质量追溯（输入VIN查全部质量记录）4) 质量预警（某个defect_code短期内集中爆发时自动预警）。帮我设计数仓。",
+      "expected_output": "完整5层数仓设计：ODS(6表贴源)→DIM(车辆维度、供应商维度、零部件维度等)→DWD(仅事实表：质检事实表、装配事实表、索赔事实表、投诉事实表)→DWS(车型质量汇总、供应商质量汇总、缺陷趋势汇总、单车质量宽表)→ADS(IPTV趋势看板、供应商质量排名、VIN追溯查询、质量预警表)，含DDL、Mermaid流向图和设计自检",
+      "files": []
+    }
+  ]
+}
