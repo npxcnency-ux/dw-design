@@ -72,9 +72,10 @@ ADS (3表)：ads_daily_gmv_report, ads_user_retention_analysis, ads_product_rank
 
 - **ODS 层**：阅读 `references/ods-design.md`
 - **DIM 层**：阅读 `references/dim-design.md`
-- **DWD 层**：阅读 `references/dwd-design.md`
+- **DWD 层**：阅读 `references/dwd-design.md`（含事实表三种类型选型：事务 / 周期快照 / 累积快照）
 - **DWS 层**：阅读 `references/dws-design.md`
 - **ADS 层**：阅读 `references/ads-design.md`
+- **数据质量规则**（横切，所有层）：阅读 `references/dqc-design.md`
 
 对于不熟悉的业务领域（如制造业、医疗、金融等），先阅读 `references/industry-glossary.md` 了解该行业的核心维度、业务过程和常见指标，确保设计贴合业务实际。
 
@@ -84,6 +85,9 @@ ADS (3表)：ads_daily_gmv_report, ads_user_retention_analysis, ads_product_rank
 3. 分区策略
 4. 数据加工方式（全量/增量、调度频率）
 5. 数据来源（上游表）
+6. **事实表类型**（事务 / 周期快照 / 累积快照）— 仅 DWD 层
+7. **SCD 类型**（Type 1 / Type 2 / Type 3 / Type 4 / 静态）— 仅 DIM 层
+8. **至少 1 条业务级 DQC 规则**（跨表一致性 / 业务公式 / 漏斗递减），所有事实表与维度表必备
 
 ### 第四步：输出设计文档
 
@@ -92,22 +96,21 @@ ADS (3表)：ads_daily_gmv_report, ads_user_retention_analysis, ads_product_rank
 1. 架构总览（Mermaid 数据流向图）
 2. 各层表清单与完整 DDL
 3. ETL 策略概述
-4. 设计自检清单
+4. **数据质量规则（DQC）章节** —— 表级、字段级、业务级三类规则齐备
+5. **量化设计自检表** —— 14 项指标含阈值与实际值
 
 ### 第五步：设计评审
 
-输出前自检：
+按 `templates/design-output.md` 第十章（量化自检表）逐项填写实际值并核对阈值。重点指标：
 
-- [ ] 90% 原则：大部分需求 DWS/ADS 可满足
-- [ ] 3 表原则：无超过 3 表关联的查询
-- [ ] ODS 完整保留源数据
-- [ ] DIM 维度表覆盖所有公共维度，SCD 类型明确
-- [ ] DWD 清洗规范化到位，事实表粒度正确
-- [ ] DWS 指标具有复用性
-- [ ] ADS 直接对应业务需求
-- [ ] 命名规范一致
+| 类别 | 检查项 |
+|------|--------|
+| 结构性 | DWS 复用度 ≥ 1.5；ADS/DWS 比 ≤ 3；向上收敛 |
+| 合规性 | 跨层引用合规率 100%；DIM/DWD 边界 100%；命名前缀合规率 100% |
+| 完整性 | 事实表类型已标注 100%；SCD 类型已标注 100%；DQC 业务级规则覆盖率 100% |
+| 健康性 | 单 DWS 表字段 ≤ 100；单 ADS SQL 关联 ≤ 3 表；比率指标存分子分母 |
 
-不满足则返回第三步优化。
+任一硬指标未通过 → 返回第三步优化。小项目可放宽 DWS 复用度等弹性指标，但合规性与完整性指标不可放宽。
 
 ## Gotchas
 
@@ -122,3 +125,5 @@ ADS (3表)：ads_daily_gmv_report, ads_user_retention_analysis, ads_product_rank
 - **ADS 层不宜过度膨胀**：ADS 表数量不应远超 DWS 表。如果一个项目有 5 张 DWS 表却产出了 15 张 ADS 表，说明 ADS 粒度太细、复用性差。优先考虑合并相似报表或在 DWS 层增加通用宽表。
 - **复杂业务领域更要坚持输出完整 DDL**：越是不熟悉的领域（如制造业、医疗、金融衍生品），越容易偷懒只写字段描述而省略 CREATE TABLE 语句。完整 DDL 能暴露字段类型、分区策略等关键细节，不能省。
 - **比率类指标在 DWS 层只存分子和分母，不存比率值**：如支付转化率，DWS 存 `pay_count` 和 `order_count`，由 ADS 层计算 `pay_count/order_count`。直接存比率会导致上卷聚合时无法重新计算（比率不可直接 SUM）。
+- **订单 / 工单 / 保单等全生命周期场景必须用累积快照事实表**：用事务事实表 + "取最新状态"视图模拟生命周期是常见反模式，会导致下游算"创建到完成时长"必须做自关联，性能差且半年后没人能维护。决策树见 `references/dwd-design.md`。
+- **DQC 业务级规则比字段级规则重要 10 倍**：字段级规则（非空、唯一）多数 ETL 框架会兜底；真正会让业务方半夜电话的是跨表一致性问题（订单金额 ≠ 明细加总、漏斗反向递增）。每张事实表至少配 1 条业务级 DQC 规则，参见 `references/dqc-design.md`。
